@@ -1,12 +1,115 @@
+import multiprocessing
+multiprocessing.set_start_method("spawn", force=True)
+
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QButtonGroup, QPushButton
+from PyQt6.QtWidgets import QApplication, QFileDialog, QLabel, QWidget, QButtonGroup, QPushButton, QWidget, QVBoxLayout, QComboBox
 from PyQt6.QtGui import QPixmap, QTransform
 from PyQt6.QtCore import Qt, QTimer
 import pyautogui
 import math
 import tkinter
+from PyQt6.QtCore import QTimer
+import random
 
+class MyWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.fedornot = False
+        self.setWindowTitle("Feeding")
+        self.move(500, 500)
+        self.setFixedSize(300, 150)
+
+        self.os_selectedpath = ""
+
+        # UI Elements
+        self.button3 = QPushButton("Feed Ramsey", self)
+        self.button4 = QPushButton("Set Folder", self)
+        self.button5 = QPushButton("Emergency Stop", self)
+        self.label = QLabel("No folder selected")
+        self.label1 = QLabel("")
+        
+        style_sheet = """
+            QPushButton {
+                background-color: #333;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 10px;
+            }QPushButton:hover {
+                background-color: #FF0000;
+            }"""
+        
+
+        self.button5.setStyleSheet(style_sheet)
+        # Layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.button4)
+        layout.addWidget(self.button3)
+        layout.addWidget(self.label)
+        layout.addWidget(self.label1)
+        self.setLayout(layout)
+
+        # Timer
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.my_repeated_function)
+        self.timer.start(1000)  # Runs every second
+
+        # Button connections
+        self.button5.clicked.connect(self.kill)
+        self.button4.clicked.connect(self.set_folder)
+        self.button3.clicked.connect(self.feed_ramsey)
+
+    def set_folder(self):
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
+        if folder_path:
+            self.os_selectedpath = folder_path
+            self.label.setText(f"Selected: {os.path.basename(folder_path)}")
+
+    def feed_ramsey(self):
+        self.fedornot = True
+        self.label1.setText("RAMsey ate")
+        print("RAMsey is full and won't eat files for a while.")
+
+        # Set a random cooldown period (e.g., 1 to 5 seconds)
+        cooldown_time = random.randint(1000, 20000)  # in milliseconds
+        QTimer.singleShot(cooldown_time, self.get_hungry_again)
+
+    def kill(self):
+        self.fedornot = False
+        self.can_eat = False
+        self.timer.stop()
+        self.label1.setText("Emergency Stop Activated! You must restart program to continue!")
+        print("All actions stopped, restart program to continue.")
+
+    def my_repeated_function(self):
+        # Respect the cooldown period
+        if self.fedornot:
+            self.label1.setText("RAMsey is full for a bit")
+            return
+
+        if self.os_selectedpath:
+            files = [f for f in os.listdir(self.os_selectedpath)
+                    if os.path.isfile(os.path.join(self.os_selectedpath, f))]
+
+            if not files:
+                self.label1.setText("Folder empty")
+                return
+
+            random_index = random.randint(0, len(files) - 1)
+            file_to_delete = files[random_index]
+            file_path = os.path.join(self.os_selectedpath, file_to_delete)
+
+            try:
+                os.remove(file_path)
+                self.label1.setText(f"File eaten: {file_to_delete}")
+                print(f"Deleted: {file_to_delete}")
+            except Exception as e:
+                print("Failed to delete file:", e)
+
+    def get_hungry_again(self):
+        self.fedornot = False
+        self.label1.setText("RAMsey is hungry again!")
+        print("RAMsey is ready to eat files again.")
 # Silence Tk warning
 TK_SILENCE_DEPRECATION = 1
 root = tkinter.Tk()
@@ -137,7 +240,7 @@ class RAMsey(QWidget):
         # Adjust body and head positions
         self.body_label = QLabel(self)
         self.body_label.setPixmap(self.body_pixmap)
-        self.body_label.move(0, self.head_pixmap.height() - 20)  # show more of the legs
+        self.body_label.move(0, self.head_pixmap.height() - 10)  # show more of the legs
         self.body_label.resize(self.body_pixmap.size())
 
         self.head_label = QLabel(self)
@@ -151,8 +254,8 @@ class RAMsey(QWidget):
         self.head_label.show()
 
         total_width = max(self.body_pixmap.width(), self.head_pixmap.width())
-        # add extra 20 pixels to height to make sure legs visible
-        total_height = self.head_pixmap.height() + self.body_pixmap.height() + 20
+        # add extra 10 pixels to height to make sure legs visible
+        total_height = self.head_pixmap.height() + self.body_pixmap.height() + 10
         self.resize(total_width, total_height)
         self.move(300, 300)
 
@@ -235,5 +338,6 @@ if __name__ == "__main__":
     control_panel = ControlPanel(pet)
     control_panel.move(100, 100)
     control_panel.show()
-
+    widget = MyWidget()
+    widget.show()
     sys.exit(app.exec())
