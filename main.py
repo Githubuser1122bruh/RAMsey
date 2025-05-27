@@ -13,6 +13,14 @@ import tkinter
 from PyQt6.QtCore import QTimer
 import random
 
+# Silence Tk warning
+TK_SILENCE_DEPRECATION = 1
+root = tkinter.Tk()
+width = root.winfo_screenwidth()
+height = root.winfo_screenheight()
+root.destroy()
+print(f"width: {width} height: {height}")
+
 class MyWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -149,14 +157,6 @@ class MyWidget(QWidget):
             self.os_selectedpath = folder_path
             self.label.setText(f"Selected: {os.path.basename(folder_path)}")
 
-# Silence Tk warning
-TK_SILENCE_DEPRECATION = 1
-root = tkinter.Tk()
-width = root.winfo_screenwidth()
-height = root.winfo_screenheight()
-root.destroy()
-print(f"width: {width} height: {height}")
-
 # ---------- Paths ----------
 base_path = os.path.dirname(os.path.abspath(__file__))
 body_path = os.path.join(base_path, "body.png")
@@ -165,17 +165,24 @@ head_path = os.path.join(base_path, "head_top.png")
 
 # ---------- Control Panel ----------
 class ControlPanel(QWidget):
-    def __init__(self, ramsey):
+    def __init__(self, ramsey_list):
         super().__init__()
-        self.move(300, 300)
-        self.ramsey = ramsey
+        self.ramsey_list = ramsey_list  # List to track all RAMsey instances
+        self.current_ramsey_index = 0  # Index of the currently controlled RAMsey
         self.setWindowTitle("RAMsey Control Panel")
-        self.setFixedSize(300, 100)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFixedSize(300, 150)
 
+        # Buttons
         self.button1 = QPushButton("Control RAMsey", self)
         self.button2 = QPushButton("Give up control", self)
+        self.spawn_button = QPushButton("Spawn new RAMsey", self)
+        self.next_ramsey_button = QPushButton("Next RAMsey", self)  # Button to swap control
 
+        # Dropdown to select RAMsey
+        self.ramsey_selector = QComboBox(self)
+        self.update_ramsey_selector()
+
+        # Button styles
         self.button1.setStyleSheet(
             """QPushButton {
                 background-color: #333;
@@ -186,28 +193,55 @@ class ControlPanel(QWidget):
                 background-color: #555;
             }"""
         )
-        self.button2.setStyleSheet(
-            """QPushButton {
-                background-color: #333;
-                color: white;
-                padding: 5px 10px;
-                border-radius: 10px;
-            }QPushButton:hover {
-                background-color: #555;
-            }"""
-        )
+        self.button2.setStyleSheet(self.button1.styleSheet())
+        self.spawn_button.setStyleSheet(self.button1.styleSheet())
+        self.next_ramsey_button.setStyleSheet(self.button1.styleSheet())
 
-        self.button_group = QButtonGroup(self)
-        self.button_group.addButton(self.button1)
-        self.button_group.addButton(self.button2)
+        # Layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.button1)
+        layout.addWidget(self.button2)
+        layout.addWidget(self.spawn_button)
+        layout.addWidget(self.next_ramsey_button)
+        layout.addWidget(QLabel("Select RAMsey to Control:"))
+        layout.addWidget(self.ramsey_selector)
+        self.setLayout(layout)
 
-        self.button1.move(30, 30)
-        self.button2.move(160, 30)
-
+        # Button connections
         self.button1.clicked.connect(self.on_clicked1)
         self.button2.clicked.connect(self.on_clicked2)
+        self.spawn_button.clicked.connect(self.spawn_ramsey)
+        self.next_ramsey_button.clicked.connect(self.next_ramsey)
+        self.ramsey_selector.currentIndexChanged.connect(self.select_ramsey)
 
         self.control_enabled = False
+
+    def update_ramsey_selector(self):
+        """Update the dropdown with the list of RAMsey instances."""
+        self.ramsey_selector.clear()
+        for i, ramsey in enumerate(self.ramsey_list):
+            self.ramsey_selector.addItem(f"RAMsey #{i + 1}")
+
+    def spawn_ramsey(self):
+        """Spawn a new RAMsey pet."""
+        new_ramsey = RAMsey()
+        self.ramsey_list.append(new_ramsey)
+        new_ramsey.move(100 + len(self.ramsey_list) * 50, 100)
+        new_ramsey.show()
+        self.update_ramsey_selector()  # Update dropdown
+        print(f"Spawned RAMsey #{len(self.ramsey_list)}")
+
+    def next_ramsey(self):
+        """Switch control to the next RAMsey."""
+        self.current_ramsey_index = (self.current_ramsey_index + 1) % len(self.ramsey_list)
+        self.ramsey_selector.setCurrentIndex(self.current_ramsey_index)
+        print(f"Switched control to RAMsey #{self.current_ramsey_index + 1}")
+
+    def select_ramsey(self, index):
+        """Select a RAMsey to control from the dropdown."""
+        if 0 <= index < len(self.ramsey_list):
+            self.current_ramsey_index = index
+            print(f"Selected RAMsey #{index + 1} for control")
 
     def on_clicked1(self):
         print("Gain control clicked")
@@ -223,24 +257,26 @@ class ControlPanel(QWidget):
             return
 
         key = event.key()
+        current_ramsey = self.ramsey_list[self.current_ramsey_index]
         if key == Qt.Key.Key_W:
-            self.ramsey.jump()
+            current_ramsey.jump()
             print("w press")
         elif key == Qt.Key.Key_A:
-            self.ramsey.move_left = True
+            current_ramsey.move_left = True
             print("a press")
         elif key == Qt.Key.Key_S:
             print("s press")
         elif key == Qt.Key.Key_D:
             print("d press")
-            self.ramsey.move_right = True
+            current_ramsey.move_right = True
 
     def keyReleaseEvent(self, event):
         key = event.key()
+        current_ramsey = self.ramsey_list[self.current_ramsey_index]
         if key == Qt.Key.Key_A:
-            self.ramsey.move_left = False
+            current_ramsey.move_left = False
         elif key == Qt.Key.Key_D:
-            self.ramsey.move_right = False
+            current_ramsey.move_right = False
 
 
 # ---------- Pet Widget ----------
@@ -374,9 +410,16 @@ if __name__ == "__main__":
     pet = RAMsey()
     pet.show()
 
-    control_panel = ControlPanel(pet)
+    ramsey_list = []
+
+    first_ramsey = RAMsey()
+    ramsey_list.append(first_ramsey)
+    first_ramsey.show()
+
+    control_panel = ControlPanel(ramsey_list)
     control_panel.move(100, 100)
     control_panel.show()
+
     widget = MyWidget()
     widget.show()
     sys.exit(app.exec())
