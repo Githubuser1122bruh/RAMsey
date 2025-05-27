@@ -25,6 +25,7 @@ class MyWidget(QWidget):
         self.os_selectedpath = ""
 
         # UI Elements
+        self.allowed_file_types = [".txt", ".png", ".docx", ".xlsx", ".pdf", ".jpg", ".py", ".cs", ".mp3", ".mp4"]
         self.healthslider = QSlider(Qt.Orientation.Vertical, self)
         self.healthslider.setRange(0, 100)
         self.healthslider.setValue(50)
@@ -34,6 +35,9 @@ class MyWidget(QWidget):
         self.button5 = QPushButton("Emergency Stop", self)
         self.label = QLabel("No folder selected")
         self.label1 = QLabel("")
+        self.file_type_selector = QComboBox(self)
+        self.file_type_selector.addItems(self.allowed_file_types)
+        self.file_type_selector.setCurrentIndex(0)
 
         style_sheet = """
             QPushButton {
@@ -44,6 +48,7 @@ class MyWidget(QWidget):
             }QPushButton:hover {
                 background-color: #FF0000;
             }"""
+
         self.button5.setStyleSheet(style_sheet)
 
         # Layout
@@ -54,6 +59,7 @@ class MyWidget(QWidget):
         layout.addWidget(self.healthslider)
         layout.addWidget(self.label)
         layout.addWidget(self.label1)
+        layout.addWidget(self.file_type_selector)
         self.setLayout(layout)
 
         # Timer
@@ -70,6 +76,11 @@ class MyWidget(QWidget):
         self.button5.clicked.connect(self.kill)
         self.button4.clicked.connect(self.set_folder)
         self.button3.clicked.connect(self.feed_ramsey)
+
+    def update_allowed_file_types(self, file_type):
+        """Update the allowed file types based on the users selection"""
+        self.allowed_file_types = [file_type]
+        print(f"Allowed file types updated: {self.allowed_file_types}")
 
     def feed_ramsey(self):
         self.fedornot = True
@@ -100,8 +111,10 @@ class MyWidget(QWidget):
             files = [f for f in os.listdir(self.os_selectedpath)
                      if os.path.isfile(os.path.join(self.os_selectedpath, f))]
 
+            files = [f for f in files if any(f.endswith(ext) for ext in self.allowed_file_types)]
+
             if not files:
-                self.label1.setText("Folder empty")
+                self.label1.setText("Folder empty or the selected file type isnt present")
                 return
 
             random_index = random.randint(0, len(files) - 1)
