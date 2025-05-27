@@ -1,9 +1,10 @@
 import multiprocessing
 multiprocessing.set_start_method("spawn", force=True)
 
+import math
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QFileDialog, QLabel, QWidget, QButtonGroup, QPushButton, QWidget, QVBoxLayout, QComboBox
+from PyQt6.QtWidgets import QApplication, QSlider, QFileDialog, QLabel, QWidget, QButtonGroup, QPushButton, QWidget, QVBoxLayout, QComboBox
 from PyQt6.QtGui import QPixmap, QTransform
 from PyQt6.QtCore import Qt, QTimer
 import pyautogui
@@ -16,19 +17,24 @@ class MyWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.fedornot = False
+        self.cooldown_time = 0  # Initialize cooldown_time
         self.setWindowTitle("Feeding")
         self.move(500, 500)
-        self.setFixedSize(300, 150)
+        self.setFixedSize(300, 300)
 
         self.os_selectedpath = ""
 
         # UI Elements
+        self.healthslider = QSlider(Qt.Orientation.Vertical, self)
+        self.healthslider.setRange(0, 100)
+        self.healthslider.setValue(50)
+        self.healthslider.setEnabled(False)
         self.button3 = QPushButton("Feed Ramsey", self)
         self.button4 = QPushButton("Set Folder", self)
         self.button5 = QPushButton("Emergency Stop", self)
         self.label = QLabel("No folder selected")
         self.label1 = QLabel("")
-        
+
         style_sheet = """
             QPushButton {
                 background-color: #333;
@@ -38,13 +44,14 @@ class MyWidget(QWidget):
             }QPushButton:hover {
                 background-color: #FF0000;
             }"""
-        
-
         self.button5.setStyleSheet(style_sheet)
+
         # Layout
         layout = QVBoxLayout()
         layout.addWidget(self.button4)
         layout.addWidget(self.button3)
+        layout.addWidget(self.button5)
+        layout.addWidget(self.healthslider)
         layout.addWidget(self.label)
         layout.addWidget(self.label1)
         self.setLayout(layout)
@@ -54,42 +61,44 @@ class MyWidget(QWidget):
         self.timer.timeout.connect(self.my_repeated_function)
         self.timer.start(1000)  # Runs every second
 
+        # Slider Update Timer
+        self.slider_timer = QTimer()
+        self.slider_timer.timeout.connect(self.update_slider)
+        self.slider_timer.start(100)  # Update slider every 100ms
+
         # Button connections
         self.button5.clicked.connect(self.kill)
         self.button4.clicked.connect(self.set_folder)
         self.button3.clicked.connect(self.feed_ramsey)
-
-    def set_folder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if folder_path:
-            self.os_selectedpath = folder_path
-            self.label.setText(f"Selected: {os.path.basename(folder_path)}")
 
     def feed_ramsey(self):
         self.fedornot = True
         self.label1.setText("RAMsey ate")
         print("RAMsey is full and won't eat files for a while.")
 
-        # Set a random cooldown period (e.g., 1 to 5 seconds)
-        cooldown_time = random.randint(1000, 20000)  # in milliseconds
-        QTimer.singleShot(cooldown_time, self.get_hungry_again)
+        # Set a random cooldown period (e.g., 1 to 20 seconds)
+        self.cooldown_time = random.randint(1000, 20000)  # in milliseconds
+        QTimer.singleShot(self.cooldown_time, self.get_hungry_again)
 
-    def kill(self):
-        self.fedornot = False
-        self.can_eat = False
-        self.timer.stop()
-        self.label1.setText("Emergency Stop Activated! You must restart program to continue!")
-        print("All actions stopped, restart program to continue.")
+        print(f"Cooldown time set to: {self.cooldown_time} ms")
+
+    def update_slider(self):
+        """Update the slider to reflect the cooldown time."""
+        if self.fedornot and self.cooldown_time > 0:
+            self.cooldown_time -= 100  # Decrease cooldown time by 100ms
+            self.healthslider.setValue(self.cooldown_time // 200)  # Scale to slider range (0-100)
+        elif not self.fedornot:
+            self.healthslider.setValue(0)  # Reset slider when not in cooldown
 
     def my_repeated_function(self):
-        # Respect the cooldown period
+        """Repeated function to perform actions."""
         if self.fedornot:
             self.label1.setText("RAMsey is full for a bit")
             return
 
         if self.os_selectedpath:
             files = [f for f in os.listdir(self.os_selectedpath)
-                    if os.path.isfile(os.path.join(self.os_selectedpath, f))]
+                     if os.path.isfile(os.path.join(self.os_selectedpath, f))]
 
             if not files:
                 self.label1.setText("Folder empty")
@@ -108,8 +117,25 @@ class MyWidget(QWidget):
 
     def get_hungry_again(self):
         self.fedornot = False
+        self.cooldown_time = 0  # Reset cooldown time
         self.label1.setText("RAMsey is hungry again!")
-        print("RAMsey is ready to eat files again.")
+        print("RAMsey is ready to eat files again!")
+
+    def kill(self):
+        """Emergency stop to kill all actions."""
+        self.fedornot = False
+        self.timer.stop()
+        self.slider_timer.stop()
+        self.label1.setText("Emergency Stop Activated! You must restart program to continue!")
+        print("All actions stopped, restart program to continue.")
+
+    def set_folder(self):
+        """Set the folder for RAMsey to operate on."""
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
+        if folder_path:
+            self.os_selectedpath = folder_path
+            self.label.setText(f"Selected: {os.path.basename(folder_path)}")
+
 # Silence Tk warning
 TK_SILENCE_DEPRECATION = 1
 root = tkinter.Tk()
