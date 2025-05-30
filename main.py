@@ -25,6 +25,7 @@ class MyWidget(QWidget):
         self.move(500, 500)
         self.setFixedSize(300, 300)
 
+        self.randomdirection = "Right"
         self.os_selectedpath = ""
         self.allowed_file_types = [".txt", ".png", ".docx", ".xlsx", ".pdf", ".jpg", ".py", ".cs", ".mp3", ".mp4"]
         self.healthslider = QSlider(Qt.Orientation.Vertical, self)
@@ -189,7 +190,7 @@ class ControlPanel(QWidget):
             self.ramsey_selector.addItem(f"RAMsey #{i + 1}")
 
     def spawn_ramsey(self):
-        new_ramsey = RAMsey()
+        new_ramsey = RAMsey(self.ramsey_list)
         self.ramsey_list.append(new_ramsey)
         new_ramsey.move(100 + len(self.ramsey_list) * 50, 100)
         new_ramsey.show()
@@ -212,6 +213,9 @@ class ControlPanel(QWidget):
 
     def keyPressEvent(self, event):
         if not self.control_enabled:
+            # Trigger random movement for all RAMsey instances cus am muy estupido
+            for ramsey in self.ramsey_list:
+                ramsey.random_movement()
             return
 
         key = event.key()
@@ -236,8 +240,9 @@ class ControlPanel(QWidget):
             current_ramsey.shiftpress = False
 
 class RAMsey(QWidget):
-    def __init__(self):
+    def __init__(self, ramsey_list):
         super().__init__()
+        self.ramsey_list = ramsey_list 
         self.y_pos = 600
         self.vy = 0
         self.gravity = 1
@@ -248,6 +253,12 @@ class RAMsey(QWidget):
         self.shiftpress = False
         self.speed = 5
         self.sprint_speed = 10
+        self.smooth_timer = None
+        self.target_x = None
+
+        self.idle_timer = QTimer()  # temporizador para movimientos inactivos aleatorios
+        self.idle_timer.timeout.connect(self.check_idle_and_move)
+        self.idle_timer.start(2000) 
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
@@ -293,10 +304,54 @@ class RAMsey(QWidget):
         self.update_movement()
         self.apply_gravity()
 
-        for other_ramsey in ramsey_list:
+        for other_ramsey in self.ramsey_list:
             if self.check_collision(other_ramsey):
                 self.handle_collision(other_ramsey)
 
+    def check_idle_and_move(self):
+        """Check if RAMsey is idle and trigger random movement."""
+        if not self.move_left and not self.move_right:
+            self.random_movement()
+
+    def random_movement(self):
+        """Trigger random movement."""
+        direction = random.choice(["Left", "Right"])
+        distance = random.randint(10, 80)
+
+        if direction == "Left":
+            self.target_x = max(0, self.x() - distance)
+        elif direction == "Right":
+            screen_width = QApplication.primaryScreen().size().width()
+            self.target_x = min(screen_width - self.width(), self.x() + distance)
+
+        self.start_smooth_movement()
+        print(f"RAMsey moved randomly to {self.pos()}")
+
+    def start_smooth_movement(self):
+        if self.smooth_timer:
+            self.smooth_timer.stop()
+
+        self.smooth_timer = QTimer()
+        self.smooth_timer.timeout.connect(self.perform_smooth_movement)
+        self.smooth_timer.start(30)
+
+    def perform_smooth_movement(self):
+        if self.target_x is None:
+            return
+
+        current_x = self.x()
+        step = 5
+
+        if current_x < self.target_x:
+            new_x = min(current_x + step, self.target_x)
+        elif current_x > self.target_x:
+            new_x = max(current_x - step, self.target_x)
+        else:
+            self.smooth_timer.stop()
+            self.target_x = None
+            return
+
+        self.move(new_x, self.y())
     def update_movement(self):
         x = self.x()
         current_speed = self.sprint_speed if self.shiftpress else self.speed
@@ -361,7 +416,7 @@ if __name__ == "__main__":
 
     ramsey_list = []
 
-    first_ramsey = RAMsey()
+    first_ramsey = RAMsey(ramsey_list)
     ramsey_list.append(first_ramsey)
     first_ramsey.show()
 
