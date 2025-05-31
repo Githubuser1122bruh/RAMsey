@@ -110,12 +110,9 @@ class MyWidget(QWidget):
             file_to_delete = files[random_index]
             file_path = os.path.join(self.os_selectedpath, file_to_delete)
 
-            try:
-                os.remove(file_path)
-                self.label1.setText(f"File eaten: {file_to_delete}")
-            except Exception as e:
-                pass
-
+            self.ramsey_list[0].eat_file(file_path)
+            self.label1.setText(f"File eaten: {file_to_delete}")
+            
     def get_hungry_again(self):
         self.fedornot = False
         self.cooldown_time = 0
@@ -143,12 +140,14 @@ class ControlPanel(QWidget):
         self.ramsey_list = ramsey_list
         self.current_ramsey_index = 0
         self.setWindowTitle("RAMsey Control Panel")
-        self.setFixedSize(300, 300)
+        self.setFixedSize(300, 400)
 
         self.button1 = QPushButton("Control RAMsey", self)
         self.button2 = QPushButton("Give up control", self)
         self.spawn_button = QPushButton("Spawn new RAMsey", self)
         self.next_ramsey_button = QPushButton("Next RAMsey", self)
+        self.stats_button = QPushButton("Open Stats Board!", self)
+        self.info_button = QPushButton("Open Information Tab", self)
 
         self.ramsey_selector = QComboBox(self)
         self.update_ramsey_selector()
@@ -163,9 +162,12 @@ class ControlPanel(QWidget):
                 background-color: #555;
             }"""
         )
+
         self.button2.setStyleSheet(self.button1.styleSheet())
         self.spawn_button.setStyleSheet(self.button1.styleSheet())
         self.next_ramsey_button.setStyleSheet(self.button1.styleSheet())
+        self.stats_button.setStyleSheet(self.button1.styleSheet())
+        self.info_button.setStyleSheet(self.button1.styleSheet())
 
         layout = QVBoxLayout()
         layout.addWidget(self.button1)
@@ -174,6 +176,8 @@ class ControlPanel(QWidget):
         layout.addWidget(self.next_ramsey_button)
         layout.addWidget(QLabel("Select RAMsey to Control:"))
         layout.addWidget(self.ramsey_selector)
+        layout.addWidget(self.stats_button)
+        layout.addWidget(self.info_button)
         self.setLayout(layout)
 
         self.button1.clicked.connect(self.on_clicked1)
@@ -181,8 +185,18 @@ class ControlPanel(QWidget):
         self.spawn_button.clicked.connect(self.spawn_ramsey)
         self.next_ramsey_button.clicked.connect(self.next_ramsey)
         self.ramsey_selector.currentIndexChanged.connect(self.select_ramsey)
+        self.stats_button.clicked.connect(self.open_stats_board)
+        self.info_button.clicked.connect(self.open_info_board)
 
         self.control_enabled = False
+
+    def open_info_board(self):
+        self.info_board = InfoBoard()
+        self.info_board.show()
+
+    def open_stats_board(self):
+        self.stats_board = StatsBoard(self.ramsey_list)
+        self.stats_board.show()
 
     def update_ramsey_selector(self):
         self.ramsey_selector.clear()
@@ -190,9 +204,8 @@ class ControlPanel(QWidget):
             self.ramsey_selector.addItem(f"RAMsey #{i + 1}")
 
     def spawn_ramsey(self):
-        new_ramsey = RAMsey(self.ramsey_list)
+        new_ramsey = RAMsey(self, self.ramsey_list)
         self.ramsey_list.append(new_ramsey)
-        new_ramsey.move(100 + len(self.ramsey_list) * 50, 100)
         new_ramsey.show()
         self.update_ramsey_selector()
 
@@ -240,13 +253,13 @@ class ControlPanel(QWidget):
             current_ramsey.shiftpress = False
 
 class RAMsey(QWidget):
-    def __init__(self, ramsey_list):
-        super().__init__()
-        self.ramsey_list = ramsey_list 
-        self.y_pos = 600
+    def __init__(self, parent, ramsey_list):
+        super().__init__(parent)  
+        self.ramsey_list = ramsey_list
+        self.files_eaten = 0
+        self.total_size_deleted = 0
         self.vy = 0
         self.gravity = 1
-        self.ground_y = 910
         self.on_ground = True
         self.move_left = False
         self.move_right = False
@@ -255,17 +268,6 @@ class RAMsey(QWidget):
         self.sprint_speed = 10
         self.smooth_timer = None
         self.target_x = None
-
-        self.idle_timer = QTimer()  # temporizador para movimientos inactivos aleatorios
-        self.idle_timer.timeout.connect(self.check_idle_and_move)
-        self.idle_timer.start(2000) 
-
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
-        )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         original_head = QPixmap(head_path)
         self.head_pixmap = original_head.scaled(
@@ -294,11 +296,24 @@ class RAMsey(QWidget):
         total_width = max(self.body_pixmap.width(), self.head_pixmap.width())
         total_height = self.head_pixmap.height() + self.body_pixmap.height() + 10
         self.resize(total_width, total_height)
-        self.move(300, self.ground_y)
+        self.move(300, 300)  # Start position
 
+        # Make RAMsey a floating window
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # Timer for random movement
         self.timer = QTimer()
         self.timer.timeout.connect(self.tick)
         self.timer.start(30)
+
+        self.idle_timer = QTimer()
+        self.idle_timer.timeout.connect(self.check_idle_and_move)
+        self.idle_timer.start(2000)
 
     def tick(self):
         self.update_movement()
@@ -309,23 +324,20 @@ class RAMsey(QWidget):
                 self.handle_collision(other_ramsey)
 
     def check_idle_and_move(self):
-        """Check if RAMsey is idle and trigger random movement."""
         if not self.move_left and not self.move_right:
             self.random_movement()
 
     def random_movement(self):
-        """Trigger random movement."""
         direction = random.choice(["Left", "Right"])
-        distance = random.randint(10, 80)
+        distance = random.randint(50, 150)
 
         if direction == "Left":
-            self.target_x = max(0, self.x() - distance)
+            new_x = max(0, self.x() - distance)
         elif direction == "Right":
             screen_width = QApplication.primaryScreen().size().width()
-            self.target_x = min(screen_width - self.width(), self.x() + distance)
+            new_x = min(screen_width - self.width(), self.x() + distance)
 
         self.start_smooth_movement()
-        print(f"RAMsey moved randomly to {self.pos()}")
 
     def start_smooth_movement(self):
         if self.smooth_timer:
@@ -352,6 +364,7 @@ class RAMsey(QWidget):
             return
 
         self.move(new_x, self.y())
+
     def update_movement(self):
         x = self.x()
         current_speed = self.sprint_speed if self.shiftpress else self.speed
@@ -382,8 +395,8 @@ class RAMsey(QWidget):
             self.vy += self.gravity
             new_y = self.y() + self.vy
 
-            if new_y >= self.ground_y:
-                new_y = self.ground_y
+            if new_y >= QApplication.primaryScreen().size().height() - self.height():
+                new_y = QApplication.primaryScreen().size().height() - self.height()
                 self.vy = 0
                 self.on_ground = True
 
@@ -409,14 +422,64 @@ class RAMsey(QWidget):
             other.move(other.x() + 10, other.y())
         else:
             self.move(self.x() + 10, self.y())
-            other.move(other.x() - 10, other.y())
+            other.move(other.x() - 10, self.y())
+
+class StatsBoard(QWidget):
+    def __init__(self, ramsey_list):
+        super().__init__()
+        self.ramsey_list = ramsey_list
+        self.setWindowTitle("RAMsey Stats Board")
+        self.setFixedSize(300, 200)
+
+        self.files_eaten_label = QLabel("Files Eaten: 0", self)
+        self.files_eaten_label.move(20, 20)
+
+        self.total_size_label = QLabel("Total Size Deleted: 0KB", self)
+        self.total_size_label.move(20, 50)
+        
+        self.ramsey_count_label = QLabel(f"RAMseys Active: {len(self.ramsey_list)}", self)
+        self.ramsey_count_label.move(20, 80)
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_stats)
+        self.timer.start(1000)
+
+    def update_stats(self):
+        total_files_eaten = sum(ramsey.files_eaten for ramsey in self.ramsey_list)
+        total_size_deleted = sum(ramsey.total_size_deleted for ramsey in self.ramsey_list)
+
+        self.files_eaten_label.setText(f"Files Eaten: {total_files_eaten}")
+        self.total_size_label.setText(f"Total Size Deleted: {total_size_deleted}KB")
+        self.ramsey_count_label.setText(f"RAMseys Active: {len(self.ramsey_list)}")
+
+class InfoBoard(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Information")
+        self.setFixedSize(300, 400)
+
+        self.information = QLabel(self)
+        self.information.setText(
+            '<p>Hello, thank you for choosing to use RAMsey!</p>'
+            '<p>If you have chosen to use RAMsey, then you certainly have great taste.</p>'
+            '<p>RAMsey is a desk pet that hovers around your desktop and sometimes likes to eat your files.</p>'
+            '<p>Visit the <a href="https://github.com/Githubuser1122bruh/RAMsey">GitHub page for RAMsey</a> for more information.</p>'
+            '<p>This is made for a project called shipwrecked which is hosted by HackClub, a non profit organisation to help teens code!</p>'
+            '<p>To get more information about hackclub, visit hackclub.com. Please star the GitHub repository!</p>'
+        )
+
+        self.information.setOpenExternalLinks(True)
+        self.information.setWordWrap(True)
+        self.information.move(10, 10)
+        self.information.resize(280, 380)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     ramsey_list = []
 
-    first_ramsey = RAMsey(ramsey_list)
+    widget = MyWidget()
+    first_ramsey = RAMsey(widget, ramsey_list) 
     ramsey_list.append(first_ramsey)
     first_ramsey.show()
 
@@ -424,7 +487,6 @@ if __name__ == "__main__":
     control_panel.move(100, 100)
     control_panel.show()
 
-    widget = MyWidget()
     widget.show()
 
     sys.exit(app.exec())
