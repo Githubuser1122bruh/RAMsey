@@ -36,7 +36,9 @@ pip install -r reqiuirements.txt, this depends on your python version
 # Run the project
 python3 main.py
 And that should be all! You can now interact with RAMsey issue free!
-
+```
 ## Issues / Contributions
 
 - Pull requests are welcome! For major changes, please open an issue first.
+
+  <img src="" alt="Gif of Ramsey in action" width="500" height="600">
