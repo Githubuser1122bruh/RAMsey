@@ -8,8 +8,9 @@ import tkinter
 multiprocessing.set_start_method("spawn", force=True)
 
 from PyQt6.QtWidgets import QApplication, QSlider, QFileDialog, QLabel, QWidget, QPushButton, QVBoxLayout, QComboBox, QMessageBox
-from PyQt6.QtGui import QPixmap, QPainter
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPixmap, QPainter, QPointerEvent, QColor
+from PyQt6.QtCore import Qt, QTimer, QRect, QPoint
+import weakref
 
 TK_SILENCE_DEPRECATION = 1
 
@@ -261,7 +262,7 @@ class ControlPanel(QWidget):
         self.control_enabled = False
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-    
+
     def closeEvent(self, event):
         event.ignore()
         self.show()
@@ -310,7 +311,6 @@ class ControlPanel(QWidget):
         if 0 <= index < len(self.ramsey_list):
             self.current_ramsey_index = index
         else:
-
             self.current_ramsey_index = 0
 
     def on_clicked1(self):
@@ -324,7 +324,6 @@ class ControlPanel(QWidget):
 
     def keyPressEvent(self, event):
         if not self.control_enabled:
-
             for ramsey in self.ramsey_list:
                 ramsey.random_movement()
             return
@@ -378,6 +377,9 @@ class RAMsey(QWidget):
         self.sprint_speed = 10
         self.smooth_timer = None 
         self.target_x = None 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.tick)
+        self.timer.start(30)
 
         original_head = QPixmap(head_path)
         if original_head.isNull():
@@ -437,6 +439,11 @@ class RAMsey(QWidget):
         self.idle_timer.timeout.connect(self.check_idle_and_move)
         self.idle_timer.start(2000) 
 
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setPen(Qt.GlobalColor.red)
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
+
     def closeEvent(self, event):
         event.ignore()
         self.show()
@@ -451,26 +458,56 @@ class RAMsey(QWidget):
             print(f"RAMsey ate {file_path}. Size: {file_size_bytes / 1024:.2f}KB")
         except FileNotFoundError:
             print(f"File not found (already eaten or moved?): {file_path}")
-
-            if hasattr(self.parent(), 'get_hungry_again'): 
+            if hasattr(self.parent(), 'get_hungry_again'):
                 self.parent().get_hungry_again()
         except Exception as e:
             print(f"Error eating file {file_path}: {e}")
-
             if hasattr(self.parent(), 'get_hungry_again'):
                 self.parent().get_hungry_again()
 
     def tick(self):
         self.update_movement()
         self.apply_gravity()
-
-        if hasattr(self.parent(), 'block_manager'):
-            self.pareny().block_manager.check_collision_with_ramsey(self)
+        self.check_collisions()  
 
         for other_ramsey in self.ramsey_list:
             if self != other_ramsey: 
                 if self.check_collision(other_ramsey):
                     self.handle_collision(other_ramsey)
+
+    def check_collisions(self):
+        if not hasattr(self.parent(), 'blocks'):
+            return
+
+        ramsey_global = QRect(self.mapToGlobal(QPoint(0, 0)), self.size())
+        print(f"RAMsey global rect: {ramsey_global}")
+
+        for block in self.parent().blocks[:]:
+            if not block.isVisible():
+                print(f"Block at {block.pos()} is not visible")
+                continue
+
+            block_global = QRect(block.mapToGlobal(QPoint(0, 0)), block.size())
+            print(f"Block global rect: {block_global}")
+
+            if ramsey_global.intersects(block_global):
+                print(f"Collision detected! RAMsey at {ramsey_global}, Block at {block_global}")
+                self.handle_collision(block)
+                break  
+
+    def handle_collision(self, block):
+        print(f"Handling collision with block at {block.pos()}")
+        try:
+            self.parent().blocks.remove(block)  # Remove block from the list
+            block.deleteLater()  # Safely delete the block
+
+            # Increment collision count in StatsBoard
+            if hasattr(self.parent(), 'stats_board'):
+                self.parent().stats_board.collisions += 1
+
+            print(f"Block successfully removed after collision: {block}")
+        except ValueError:
+            print(f"Block already removed: {block}")
 
     def check_idle_and_move(self):
         if not self.move_left and not self.move_right and self.target_x is None:
@@ -512,7 +549,6 @@ class RAMsey(QWidget):
         elif current_x > self.target_x:
             new_x = max(current_x - step, self.target_x)
         else:
-
             if self.smooth_timer: self.smooth_timer.stop()
             self.target_x = None 
             return
@@ -523,7 +559,6 @@ class RAMsey(QWidget):
         x = self.x()
         current_speed = self.sprint_speed if self.shiftpress else self.speed
 
-        # Ignore move_left and move_right if target_x is set (random movement)
         if self.target_x is None:
             if self.move_left:
                 x -= current_speed
@@ -578,6 +613,7 @@ class StatsBoard(QWidget):
     def __init__(self, ramsey_list):
         super().__init__()
         self.ramsey_list = ramsey_list
+        self.collisions = 0  # Initialize collision count
         self.setWindowTitle("RAMsey Stats Board")
         self.setFixedSize(300, 200)
 
@@ -585,11 +621,13 @@ class StatsBoard(QWidget):
         self.files_eaten_label = QLabel("Files Eaten: 0", self)
         self.total_size_label = QLabel("Total Size Deleted: 0KB", self)
         self.ramsey_count_label = QLabel(f"RAMseys Active: {len(self.ramsey_list)}", self)
+        self.collisions_label = QLabel("Collisions: 0", self)  # Add collisions label
 
         layout.addWidget(self.files_eaten_label)
         layout.addWidget(self.total_size_label)
         layout.addWidget(self.ramsey_count_label)
-        layout.addStretch() 
+        layout.addWidget(self.collisions_label)  # Add collisions label to layout
+        layout.addStretch()
         self.setLayout(layout)
 
         self.timer = QTimer()
@@ -610,6 +648,7 @@ class StatsBoard(QWidget):
             self.total_size_label.setText(f"Total Size Deleted: {total_size_deleted_kb / (1024 * 1024):.2f}GB")
 
         self.ramsey_count_label.setText(f"RAMseys Active: {len(self.ramsey_list)}")
+        self.collisions_label.setText(f"Collisions: {self.collisions}")  # Update collisions label
 
 class InfoBoard(QWidget):
     def __init__(self):
@@ -635,83 +674,82 @@ class InfoBoard(QWidget):
         self.setLayout(layout)
 
 class Block(QWidget):
-    def __init__(self, color, size, position):
-        super().__init__()
-        self.setFixedSize(size[0], size[1]) 
-        self.setStyleSheet(f"background-color: {color};")
-        self.move(position[0], position[1])  
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(50, 50)
+        self.color = QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        screen_geometry = QApplication.primaryScreen().geometry()
+        x = random.randint(0, screen_geometry.width() - 50)
+        y = 950
+        self.move(x, y)
+        QTimer.singleShot(10000, self.deleteLater)
+
+        self.collision_rect = QRect(self.mapToGlobal(QPoint(0, 0)), self.size())
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setBrush(self.color)
+        painter.setPen(Qt.GlobalColor.red)  
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  
+        painter.setPen(Qt.PenStyle.NoPen)  
+        painter.setBrush(self.color)  
+        painter.drawRect(self.rect().adjusted(1, 1, -2, -2))  
 
 class BlockManager:
-    def __init__(self, parent):
-        self.parent = parent
+    def __init__(self, parent_widget):
+        self.parent_widget = parent_widget
         self.blocks = []
         self.spawn_timer = QTimer()
         self.spawn_timer.timeout.connect(self.spawn_block)
-        self.spawn_timer.start(5000)
-        print(f"Parent widget geometry: {self.parent.geometry()}")
-        print(f"Parent widget is visible: {self.parent.isVisible()}")
-        print("Spawn timer started.")
+        self.spawn_timer.start(5000)  # Spawn a block every 5 seconds
 
     def spawn_block(self):
-        screen_geometry = QApplication.primaryScreen().geometry()
-        screen_width = screen_geometry.width()
-        screen_height = screen_geometry.height()
-
-        block_width = 100
-        block_height = 50
-        ground_y = 900
-
-        random_x = random.randint(0, screen_width - block_width)
-
-        print(f"Spawning block at random_x: {random_x}, ground_y: {ground_y}")
-        print(f"Block width: {block_width}, Block height: {block_height}")
-
-        block = Block(color="blue", size=(block_width, block_height), position=(random_x, ground_y))
+        block = Block(self.parent_widget)
         block.show()
-        print(f"Block is visible: {block.isVisible()}")
-
+        # Connect the destroyed signal to remove the block from the list
+        block.destroyed.connect(lambda: self.remove_block(block))
         self.blocks.append(block)
 
-        QTimer.singleShot(10000, lambda: self.delete_block(block))
-
-    def delete_block(self, block):
-        if block in self.blocks:
+    def remove_block(self, block):
+        try:
             self.blocks.remove(block)
-            block.deleteLater()
-
-    def check_collision_with_ramsey(self, ramsey):
-        for block in self.blocks:
-            if ramsey.geometry().intersects(block.geometry()):
-                print("Collision detected")
-                self.collision_with_ramsey(ramsey, block)
-
-    def collision_with_ramsey(self, ramsey, block):
-        print("Handling collision")
-        block.setStyleSheet("background-color: red;")
-        # put any collision logic here
+            print(f"Block removed: {block}")
+        except ValueError:
+            print(f"Block already removed: {block}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    screen = app.primaryScreen().availableGeometry()
+    screen_width, screen_height = screen.width(), screen.height()
+
     ramsey_list = []
 
-    screen_geometry = QApplication.primaryScreen().geometry()
-    screen_width = screen_geometry.width()
-    screen_height = screen_geometry.height()
-
     widget = MyWidget()
-    widget.show()
-    widget.move((screen_width - widget.width()) // 2, (screen_height - widget.height()) // 2)
+    widget.ramsey_list = ramsey_list
 
-    first_ramsey = RAMsey(None, ramsey_list)
+    first_ramsey = RAMsey(widget, ramsey_list)
     ramsey_list.append(first_ramsey)
-    first_ramsey.show()
-    first_ramsey.move((screen_width - first_ramsey.width()) // 2, (screen_height - first_ramsey.height()) // 2)
 
     control_panel = ControlPanel(ramsey_list)
-    control_panel.show()
-    control_panel.move((screen_width - control_panel.width()) // 2, (screen_height - control_panel.height()) // 2)
 
     block_manager = BlockManager(widget)
+    widget.blocks = block_manager.blocks  
+
+    def center_window(window):
+        window.move(
+            (screen_width - window.width()) // 2,
+            (screen_height - window.height()) // 2
+        )
+
+    for w in [widget, first_ramsey, control_panel]:
+        w.show()
+        center_window(w)
 
     sys.exit(app.exec())

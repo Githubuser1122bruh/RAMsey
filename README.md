@@ -1,4 +1,42 @@
 # RAMsey
-RAMsey is an interactive bot that sits on your computer ready to eat up your ram (maybe your computer)
-The second project for Shipwrecked by Hackclub that I am making.
-![image](https://github.com/user-attachments/assets/3cf75c25-22bd-4cae-a236-83e48ca47dea)
+
+> Ramsey is an interactive robot that lives on your screen, so get ready to have some fun (and possible issues) with ramsey.
+
+---
+
+## 📊 Project Info
+
+| 📌 Info         | 💬 Details                      |
+|----------------|----------------------------------|
+| 👥 Contributors | [@samhith-pola](https://github.com/Githubuser1122bruh) |
+| 🛠 Tech Stack   | Python  |
+| 📂 Repo Size    | ![Repo Size](https://img.shields.io/github/repo-size/Githubuser1122bruh/RAMsey) |
+| 📅 Last Update  | ![Last Commit](https://img.shields.io/github/last-commit/Githubuser1122bruh/RAMsey) |
+
+---
+
+##  Features
+
+- RAMsey has a very detailed stats board and it displays all of your statistics without error!
+- Fast performance - You can count on RAMsey to run the second you open it without any ridiculous waiting times.
+- Sleek UI, this should be easy to navigate, using QWidget with Python it was very easy to accomplish this.
+
+---
+
+##  Getting Started
+
+```bash
+# Clone the repo
+git clone https://github.com/username/projectname
+
+# Install dependencies
+pip3 install -r requirements.txt OR
+pip install -r reqiuirements.txt, this depends on your python version
+
+# Run the project
+python3 main.py
+And that should be all! You can now interact with RAMsey issue free!
+
+## Issues / Contributions
+
+- Pull requests are welcome! For major changes, please open an issue first.
