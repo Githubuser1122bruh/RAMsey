@@ -41,4 +41,4 @@ And that should be all! You can now interact with RAMsey issue free!
 
 - Pull requests are welcome! For major changes, please open an issue first.
 
-  <img src="" alt="Gif of Ramsey in action" width="500" height="600">
+  <img src="code/images/Demo.gif" alt="Gif of Ramsey in action" width="500" height="600">
