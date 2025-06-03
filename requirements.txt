@@ -1,6 +1,0 @@
-PyQt6
-Pillow
-pyautogui
-keyboard
-pynput
-pywin32
