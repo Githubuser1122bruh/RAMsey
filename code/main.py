@@ -8,7 +8,7 @@ import tkinter
 multiprocessing.set_start_method("spawn", force=True)
 
 from PyQt6.QtWidgets import QApplication, QSlider, QFileDialog, QLabel, QWidget, QPushButton, QVBoxLayout, QComboBox, QMessageBox
-from PyQt6.QtGui import QPixmap, QPainter, QPointerEvent, QColor
+from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import Qt, QTimer, QRect, QPoint
 import weakref
 
@@ -23,11 +23,20 @@ except Exception as e:
     print(f"Warning: Tkinter initialization failed or not needed: {e}")
 
     app_for_screen_size = QApplication.instance()
-    if (app_for_screen_size is None): 
+    if app_for_screen_size is None:
         app_for_screen_size = QApplication(sys.argv)
     screen = app_for_screen_size.primaryScreen().size()
     width = screen.width()
     height = screen.height()
+
+def resource_path(relative_path):
+    """ Get the absolute path to a resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+images_folder = resource_path("images")
+body_path = os.path.join(images_folder, "body.png")
+head_path = os.path.join(images_folder, "head_top.png")
 
 class MyWidget(QWidget):
     def __init__(self):
@@ -38,18 +47,18 @@ class MyWidget(QWidget):
         self.move(500, 500)
         self.setFixedSize(300, 300)
 
-        self.randomdirection = "Right" 
+        self.randomdirection = "Right"
         self.os_selectedpath = ""
         self.allowed_file_types = [".txt", ".png", ".docx", ".xlsx", ".pdf", ".jpg", ".py", ".cs", ".mp3", ".mp4"]
         self.healthslider = QSlider(Qt.Orientation.Vertical, self)
         self.healthslider.setRange(0, 100)
         self.healthslider.setValue(50)
-        self.healthslider.setEnabled(False) 
+        self.healthslider.setEnabled(False)
         self.button3 = QPushButton("Feed Ramsey", self)
         self.button4 = QPushButton("Set Folder", self)
         self.button5 = QPushButton("Emergency Stop", self)
         self.label = QLabel("No folder selected")
-        self.label1 = QLabel("") 
+        self.label1 = QLabel("")
         self.file_type_selector = QComboBox(self)
         self.file_type_selector.addItems(self.allowed_file_types)
         self.file_type_selector.setCurrentIndex(0)
@@ -58,27 +67,19 @@ class MyWidget(QWidget):
 
         style_sheet = """
             QPushButton {
-                background-color: 
+                background-color: #555;
                 color: white;
                 padding: 5px 10px;
                 border-radius: 10px;
-            }QPushButton:hover {
-                background-color: 
-            }"""
+            }
+            QPushButton:hover {
+                background-color: #777;
+            }
+        """
 
-        self.button5.setStyleSheet(
-            """QPushButton {
-                background-color: 
-                color: white;
-                padding: 5px 10px;
-                border-radius: 10px;
-            }QPushButton:hover {
-                background-color: 
-            }"""
-        )
-
-        self.button3.setStyleSheet(style_sheet.replace("#FF0000", "#555")) 
-        self.button4.setStyleSheet(style_sheet.replace("#FF0000", "#555")) 
+        self.button5.setStyleSheet(style_sheet)
+        self.button3.setStyleSheet(style_sheet)
+        self.button4.setStyleSheet(style_sheet)
 
         layout = QVBoxLayout()
         layout.addWidget(self.button4)
@@ -92,11 +93,11 @@ class MyWidget(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.my_repeated_function)
-        self.timer.start(1000) 
+        self.timer.start(1000)
 
         self.slider_timer = QTimer()
         self.slider_timer.timeout.connect(self.update_slider)
-        self.slider_timer.start(100) 
+        self.slider_timer.start(100)
 
         self.button5.clicked.connect(self.kill)
         self.button4.clicked.connect(self.set_folder)
@@ -117,22 +118,22 @@ class MyWidget(QWidget):
         if self.ramsey_list and len(self.ramsey_list) > 0:
             self.fedornot = True
             self.label1.setText("RAMsey ate!")
-            self.cooldown_time = random.randint(10000, 20000) 
+            self.cooldown_time = random.randint(10000, 20000)
 
-            self.healthslider.setRange(0, self.cooldown_time // 200) 
-            self.healthslider.setValue(self.cooldown_time // 200) 
+            self.healthslider.setRange(0, self.cooldown_time // 200)
+            self.healthslider.setValue(self.cooldown_time // 200)
             QTimer.singleShot(self.cooldown_time, self.get_hungry_again)
         else:
             self.label1.setText("No RAMsey spawned yet!")
 
     def update_slider(self):
         if self.fedornot and self.cooldown_time > 0:
-            self.cooldown_time -= 100 
+            self.cooldown_time -= 100
 
             current_slider_value = max(0, self.cooldown_time // 200)
             self.healthslider.setValue(current_slider_value)
         elif not self.fedornot:
-            self.healthslider.setValue(0) 
+            self.healthslider.setValue(0)
 
     def my_repeated_function(self):
         if self.fedornot:
@@ -144,7 +145,6 @@ class MyWidget(QWidget):
             return
 
         if self.os_selectedpath:
-
             files = [f for f in os.listdir(self.os_selectedpath)
                      if os.path.isfile(os.path.join(self.os_selectedpath, f)) and
                      any(f.endswith(ext) for ext in self.allowed_file_types)]
@@ -173,7 +173,7 @@ class MyWidget(QWidget):
         self.fedornot = False
         self.cooldown_time = 0
         self.label1.setText("RAMsey is hungry again!")
-        self.healthslider.setValue(0) 
+        self.healthslider.setValue(0)
 
     def kill(self):
         self.fedornot = False
@@ -186,7 +186,7 @@ class MyWidget(QWidget):
             ramsey.cube_timer.stop()
             if ramsey.smooth_timer:
                 ramsey.smooth_timer.stop()
-            ramsey.hide() 
+            ramsey.hide()
 
         self.label1.setText("Emergency Stop Activated! Restart program to continue!")
 
@@ -196,24 +196,17 @@ class MyWidget(QWidget):
 
     def set_folder(self):
         folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if (folder_path): 
+        if folder_path:
             self.os_selectedpath = folder_path
             self.label.setText(f"Selected: {os.path.basename(folder_path)}")
         else:
             self.label.setText("No folder selected")
-
-base_path = os.path.dirname(os.path.abspath(__file__))
-images_folder = os.path.join(base_path, "images") 
-body_path = os.path.join(images_folder, "body.png")
-head_path = os.path.join(images_folder, "head_top.png")
 
 class ControlPanel(QWidget):
     def __init__(self, ramsey_list):
         super().__init__()
         self.ramsey_list = ramsey_list
         self.current_ramsey_index = 0
-        self.setWindowTitle("RAMsey Control Panel")
-        self.setFixedSize(300, 400)
 
         self.button1 = QPushButton("Control RAMsey", self)
         self.button2 = QPushButton("Give up control", self)
@@ -223,7 +216,7 @@ class ControlPanel(QWidget):
         self.info_button = QPushButton("Open Information Tab", self)
 
         self.ramsey_selector = QComboBox(self)
-        self.update_ramsey_selector() 
+        self.update_ramsey_selector()
 
         button_style = """
             QPushButton {
@@ -707,12 +700,11 @@ class BlockManager:
         self.blocks = []
         self.spawn_timer = QTimer()
         self.spawn_timer.timeout.connect(self.spawn_block)
-        self.spawn_timer.start(5000)  # Spawn a block every 5 seconds
+        self.spawn_timer.start(5000) 
 
     def spawn_block(self):
         block = Block(self.parent_widget)
         block.show()
-        # Connect the destroyed signal to remove the block from the list
         block.destroyed.connect(lambda: self.remove_block(block))
         self.blocks.append(block)
 
