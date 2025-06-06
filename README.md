@@ -29,7 +29,7 @@ Challenge: If you can find an issue, open an issue and star it, I will feature y
 
 ```bash
 # Clone the repo
-git clone https://github.com/username/projectname
+git clone https://github.com/SamhithPola2025/RAMsey
 
 # Install dependencies
 pip3 install -r requirements.txt OR
