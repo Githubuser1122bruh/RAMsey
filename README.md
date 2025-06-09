@@ -1,6 +1,6 @@
 # RAMsey
 
-Challenge: If you can find an issue, open an issue and star it, I will feature you as a contributer in the ReadMe.md! And I might also contact you in the future to work on a project!
+Challenge: If you can find an issue, open an issue and star it, I will feature you as a contributer in the README.md! And I might also contact you in the future to work on a project!
 
 > Ramsey is an interactive robot that lives on your screen, so get ready to have some fun (and possible issues) with ramsey.
 
