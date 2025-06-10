@@ -8,6 +8,9 @@
 If you can **find a bug or open a useful issue**, I’ll feature you in the README as a **contributor** — and maybe even contact you for future collabs.  
 ⭐ **Star this repo** if you like the project — it helps a ton!
 
+# Contributers -
+- https://github.com/caveat-dev
+Caveat Dev fixed the readme and moved the requirements.txt outside of the code folder because I somehow forgot!
 ---
 
 ## 📊 Project Overview
