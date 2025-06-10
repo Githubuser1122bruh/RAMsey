@@ -49,7 +49,7 @@ cd RAMsey
 pip install -r requirements.txt  # Python 3.x
 
 # Run the project
-python3 main.py
+python3 code/main.py
 ```
 Thats all! RAMsey is now running!
 
