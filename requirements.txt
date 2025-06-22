@@ -3,4 +3,5 @@ Pillow
 pyautogui
 keyboard
 pynput
-pywin32
+rembg
+cx_Freeze
