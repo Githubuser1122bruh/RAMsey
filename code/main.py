@@ -7,7 +7,17 @@ import tkinter
 
 multiprocessing.set_start_method("spawn", force=True)
 
-from PyQt6.QtWidgets import QApplication, QSlider, QFileDialog, QLabel, QWidget, QPushButton, QVBoxLayout, QComboBox, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication,
+    QSlider,
+    QFileDialog,
+    QLabel,
+    QWidget,
+    QPushButton,
+    QVBoxLayout,
+    QComboBox,
+    QMessageBox,
+)
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import Qt, QTimer, QRect, QPoint
 import weakref
@@ -29,14 +39,17 @@ except Exception as e:
     width = screen.width()
     height = screen.height()
 
+
 def resource_path(relative_path):
-    """ Get the absolute path to a resource, works for dev and for PyInstaller """
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    """Get the absolute path to a resource, works for dev and for PyInstaller"""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
+
 
 images_folder = resource_path("images")
 body_path = os.path.join(images_folder, "body.png")
 head_path = os.path.join(images_folder, "head_top.png")
+
 
 class MyWidget(QWidget):
     def __init__(self):
@@ -49,7 +62,18 @@ class MyWidget(QWidget):
 
         self.randomdirection = "Right"
         self.os_selectedpath = ""
-        self.allowed_file_types = [".txt", ".png", ".docx", ".xlsx", ".pdf", ".jpg", ".py", ".cs", ".mp3", ".mp4"]
+        self.allowed_file_types = [
+            ".txt",
+            ".png",
+            ".docx",
+            ".xlsx",
+            ".pdf",
+            ".jpg",
+            ".py",
+            ".cs",
+            ".mp3",
+            ".mp4",
+        ]
         self.healthslider = QSlider(Qt.Orientation.Vertical, self)
         self.healthslider.setRange(0, 100)
         self.healthslider.setValue(50)
@@ -63,7 +87,9 @@ class MyWidget(QWidget):
         self.file_type_selector.addItems(self.allowed_file_types)
         self.file_type_selector.setCurrentIndex(0)
 
-        self.file_type_selector.currentTextChanged.connect(self._update_selected_file_type)
+        self.file_type_selector.currentTextChanged.connect(
+            self._update_selected_file_type
+        )
 
         style_sheet = """
             QPushButton {
@@ -145,12 +171,17 @@ class MyWidget(QWidget):
             return
 
         if self.os_selectedpath:
-            files = [f for f in os.listdir(self.os_selectedpath)
-                     if os.path.isfile(os.path.join(self.os_selectedpath, f)) and
-                     any(f.endswith(ext) for ext in self.allowed_file_types)]
+            files = [
+                f
+                for f in os.listdir(self.os_selectedpath)
+                if os.path.isfile(os.path.join(self.os_selectedpath, f))
+                and any(f.endswith(ext) for ext in self.allowed_file_types)
+            ]
 
             if not files:
-                self.label1.setText(f"Folder empty or no '{self.allowed_file_types[0]}' files present.")
+                self.label1.setText(
+                    f"Folder empty or no '{self.allowed_file_types[0]}' files present."
+                )
                 return
 
             random_index = random.randint(0, len(files) - 1)
@@ -183,7 +214,6 @@ class MyWidget(QWidget):
         for ramsey in self.ramsey_list:
             ramsey.timer.stop()
             ramsey.idle_timer.stop()
-            ramsey.cube_timer.stop()
             if ramsey.smooth_timer:
                 ramsey.smooth_timer.stop()
             ramsey.hide()
@@ -201,6 +231,7 @@ class MyWidget(QWidget):
             self.label.setText(f"Selected: {os.path.basename(folder_path)}")
         else:
             self.label.setText("No folder selected")
+
 
 class ControlPanel(QWidget):
     def __init__(self, ramsey_list):
@@ -274,7 +305,7 @@ class ControlPanel(QWidget):
         self.ramsey_selector.clear()
         if not self.ramsey_list:
             self.ramsey_selector.addItem("No RAMseys")
-            self.button1.setEnabled(False) 
+            self.button1.setEnabled(False)
             self.next_ramsey_button.setEnabled(False)
             return
 
@@ -298,7 +329,9 @@ class ControlPanel(QWidget):
     def next_ramsey(self):
         if not self.ramsey_list:
             return
-        self.current_ramsey_index = (self.current_ramsey_index + 1) % len(self.ramsey_list)
+        self.current_ramsey_index = (self.current_ramsey_index + 1) % len(
+            self.ramsey_list
+        )
         self.ramsey_selector.setCurrentIndex(self.current_ramsey_index)
 
     def select_ramsey(self, index):
@@ -309,7 +342,7 @@ class ControlPanel(QWidget):
 
     def on_clicked1(self):
         self.control_enabled = True
-        self.setFocus() 
+        self.setFocus()
         print("Control enabled for RAMsey.")
 
     def on_clicked2(self):
@@ -323,7 +356,7 @@ class ControlPanel(QWidget):
             return
 
         key = event.key()
-        if not self.ramsey_list: 
+        if not self.ramsey_list:
             return
         current_ramsey = self.ramsey_list[self.current_ramsey_index]
 
@@ -355,22 +388,23 @@ class ControlPanel(QWidget):
         elif key == Qt.Key.Key_Shift:
             current_ramsey.shiftpress = False
 
+
 class RAMsey(QWidget):
     def __init__(self, parent, ramsey_list):
-        super().__init__(parent) 
-        self.ramsey_list = ramsey_list 
+        super().__init__(parent)
+        self.ramsey_list = ramsey_list
         self.files_eaten = 0
         self.total_size_deleted = 0
-        self.vy = 0 
-        self.gravity = 1 
+        self.vy = 0
+        self.gravity = 1
         self.on_ground = True
         self.move_left = False
         self.move_right = False
-        self.shiftpress = False 
+        self.shiftpress = False
         self.speed = 5
         self.sprint_speed = 10
-        self.smooth_timer = None 
-        self.target_x = None 
+        self.smooth_timer = None
+        self.target_x = None
         self.timer = QTimer()
         self.timer.timeout.connect(self.tick)
         self.timer.start(30)
@@ -383,7 +417,10 @@ class RAMsey(QWidget):
             self.head_pixmap.fill(Qt.GlobalColor.blue)
         else:
             self.head_pixmap = original_head.scaled(
-                80, 80, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                80,
+                80,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
             )
 
         self.body_pixmap = QPixmap(body_path)
@@ -394,7 +431,10 @@ class RAMsey(QWidget):
             self.body_pixmap.fill(Qt.GlobalColor.green)
         else:
             self.body_pixmap = self.body_pixmap.scaled(
-                150, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                150,
+                150,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
             )
 
         self.body_label = QLabel(self)
@@ -406,32 +446,32 @@ class RAMsey(QWidget):
         self.head_label = QLabel(self)
         self.head_label.setPixmap(self.head_pixmap)
         self.head_label.setFixedSize(self.head_pixmap.size())
-        self.head_label.setScaledContents(False) 
+        self.head_label.setScaledContents(False)
 
         head_x = (self.body_pixmap.width() - self.head_pixmap.width()) // 2
-        head_y = 10 
+        head_y = 10
         self.head_label.move(head_x, head_y)
         self.head_label.show()
 
         total_width = max(self.body_pixmap.width(), self.head_pixmap.width())
-        total_height = self.head_pixmap.height() + self.body_pixmap.height() + 10 
+        total_height = self.head_pixmap.height() + self.body_pixmap.height() + 10
         self.resize(total_width, total_height)
-        self.move(300, 300) 
+        self.move(300, 300)
 
         self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |       
-            Qt.WindowType.WindowStaysOnTopHint |      
-            Qt.WindowType.Tool                        
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground) 
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.tick)
-        self.timer.start(30) 
+        self.timer.start(30)
 
         self.idle_timer = QTimer()
         self.idle_timer.timeout.connect(self.check_idle_and_move)
-        self.idle_timer.start(2000) 
+        self.idle_timer.start(2000)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -448,29 +488,29 @@ class RAMsey(QWidget):
             file_size_bytes = os.path.getsize(file_path)
             os.remove(file_path)
             self.files_eaten += 1
-            self.total_size_deleted += file_size_bytes / 1024 
+            self.total_size_deleted += file_size_bytes / 1024
             print(f"RAMsey ate {file_path}. Size: {file_size_bytes / 1024:.2f}KB")
         except FileNotFoundError:
             print(f"File not found (already eaten or moved?): {file_path}")
-            if hasattr(self.parent(), 'get_hungry_again'):
+            if hasattr(self.parent(), "get_hungry_again"):
                 self.parent().get_hungry_again()
         except Exception as e:
             print(f"Error eating file {file_path}: {e}")
-            if hasattr(self.parent(), 'get_hungry_again'):
+            if hasattr(self.parent(), "get_hungry_again"):
                 self.parent().get_hungry_again()
 
     def tick(self):
         self.update_movement()
         self.apply_gravity()
-        self.check_collisions()  
+        self.check_collisions()
 
         for other_ramsey in self.ramsey_list:
-            if self != other_ramsey: 
+            if self != other_ramsey:
                 if self.check_collision(other_ramsey):
                     self.handle_collision(other_ramsey)
 
     def check_collisions(self):
-        if not hasattr(self.parent(), 'blocks'):
+        if not hasattr(self.parent(), "blocks"):
             return
 
         ramsey_global = QRect(self.mapToGlobal(QPoint(0, 0)), self.size())
@@ -485,17 +525,19 @@ class RAMsey(QWidget):
             print(f"Block global rect: {block_global}")
 
             if ramsey_global.intersects(block_global):
-                print(f"Collision detected! RAMsey at {ramsey_global}, Block at {block_global}")
+                print(
+                    f"Collision detected! RAMsey at {ramsey_global}, Block at {block_global}"
+                )
                 self.handle_collision(block)
-                break  
+                break
 
     def handle_collision(self, block):
         print(f"Handling collision with block at {block.pos()}")
         try:
-            self.parent().blocks.remove(block)  
-            block.deleteLater()  
+            self.parent().blocks.remove(block)
+            block.deleteLater()
 
-            if hasattr(self.parent(), 'stats_board'):
+            if hasattr(self.parent(), "stats_board"):
                 self.parent().stats_board.collisions += 1
 
             print(f"Block successfully removed after collision: {block}")
@@ -508,7 +550,7 @@ class RAMsey(QWidget):
 
     def random_movement(self):
         self.move_left = False
-        self.move_right = False 
+        self.move_right = False
 
         direction = random.choice(["Left", "Right"])
         distance = random.randint(50, 150)
@@ -527,23 +569,25 @@ class RAMsey(QWidget):
 
         self.smooth_timer = QTimer()
         self.smooth_timer.timeout.connect(self.perform_smooth_movement)
-        self.smooth_timer.start(30) 
+        self.smooth_timer.start(30)
 
     def perform_smooth_movement(self):
         if self.target_x is None:
-            if self.smooth_timer: self.smooth_timer.stop()
+            if self.smooth_timer:
+                self.smooth_timer.stop()
             return
 
         current_x = self.x()
-        step = 5 
+        step = 5
 
         if current_x < self.target_x:
             new_x = min(current_x + step, self.target_x)
         elif current_x > self.target_x:
             new_x = max(current_x - step, self.target_x)
         else:
-            if self.smooth_timer: self.smooth_timer.stop()
-            self.target_x = None 
+            if self.smooth_timer:
+                self.smooth_timer.stop()
+            self.target_x = None
             return
 
         self.move(new_x, self.y())
@@ -571,20 +615,20 @@ class RAMsey(QWidget):
 
     def jump(self):
         if self.on_ground:
-            self.vy = -15 
+            self.vy = -15
             self.on_ground = False
 
     def apply_gravity(self):
         if not self.on_ground:
-            self.vy += self.gravity 
+            self.vy += self.gravity
             new_y = self.y() + self.vy
 
             screen_height = QApplication.primaryScreen().size().height()
             ground_level = screen_height - self.height()
 
             if new_y >= ground_level:
-                new_y = ground_level 
-                self.vy = 0 
+                new_y = ground_level
+                self.vy = 0
                 self.on_ground = True
 
             self.move(self.x(), new_y)
@@ -602,24 +646,27 @@ class RAMsey(QWidget):
             self.move(self.x() + 10, self.y())
             other.move(other.x() - 10, self.y())
 
+
 class StatsBoard(QWidget):
     def __init__(self, ramsey_list):
         super().__init__()
         self.ramsey_list = ramsey_list
-        self.collisions = 0  
+        self.collisions = 0
         self.setWindowTitle("RAMsey Stats Board")
         self.setFixedSize(300, 200)
 
         layout = QVBoxLayout()
         self.files_eaten_label = QLabel("Files Eaten: 0", self)
         self.total_size_label = QLabel("Total Size Deleted: 0KB", self)
-        self.ramsey_count_label = QLabel(f"RAMseys Active: {len(self.ramsey_list)}", self)
-        self.collisions_label = QLabel("Collisions: 0", self)  
+        self.ramsey_count_label = QLabel(
+            f"RAMseys Active: {len(self.ramsey_list)}", self
+        )
+        self.collisions_label = QLabel("Collisions: 0", self)
 
         layout.addWidget(self.files_eaten_label)
         layout.addWidget(self.total_size_label)
         layout.addWidget(self.ramsey_count_label)
-        layout.addWidget(self.collisions_label) 
+        layout.addWidget(self.collisions_label)
         layout.addStretch()
         self.setLayout(layout)
 
@@ -629,19 +676,28 @@ class StatsBoard(QWidget):
 
     def update_stats(self):
         total_files_eaten = sum(ramsey.files_eaten for ramsey in self.ramsey_list)
-        total_size_deleted_kb = sum(ramsey.total_size_deleted for ramsey in self.ramsey_list)
+        total_size_deleted_kb = sum(
+            ramsey.total_size_deleted for ramsey in self.ramsey_list
+        )
 
         self.files_eaten_label.setText(f"Files Eaten: {total_files_eaten}")
 
         if total_size_deleted_kb < 1024:
-            self.total_size_label.setText(f"Total Size Deleted: {total_size_deleted_kb:.2f}KB")
+            self.total_size_label.setText(
+                f"Total Size Deleted: {total_size_deleted_kb:.2f}KB"
+            )
         elif total_size_deleted_kb < (1024 * 1024):
-            self.total_size_label.setText(f"Total Size Deleted: {total_size_deleted_kb / 1024:.2f}MB")
+            self.total_size_label.setText(
+                f"Total Size Deleted: {total_size_deleted_kb / 1024:.2f}MB"
+            )
         else:
-            self.total_size_label.setText(f"Total Size Deleted: {total_size_deleted_kb / (1024 * 1024):.2f}GB")
+            self.total_size_label.setText(
+                f"Total Size Deleted: {total_size_deleted_kb / (1024 * 1024):.2f}GB"
+            )
 
         self.ramsey_count_label.setText(f"RAMseys Active: {len(self.ramsey_list)}")
-        self.collisions_label.setText(f"Collisions: {self.collisions}") 
+        self.collisions_label.setText(f"Collisions: {self.collisions}")
+
 
 class InfoBoard(QWidget):
     def __init__(self):
@@ -652,29 +708,32 @@ class InfoBoard(QWidget):
         layout = QVBoxLayout()
         self.information = QLabel(self)
         self.information.setText(
-            '<p>Hello, thank you for choosing to use RAMsey!</p>'
-            '<p>If you have chosen to use RAMsey, then you certainly have great taste.</p>'
-            '<p>RAMsey is a desk pet that hovers around your desktop and sometimes likes to eat your files.</p>'
+            "<p>Hello, thank you for choosing to use RAMsey!</p>"
+            "<p>If you have chosen to use RAMsey, then you certainly have great taste.</p>"
+            "<p>RAMsey is a desk pet that hovers around your desktop and sometimes likes to eat your files.</p>"
             '<p>Visit the <a href="https://github.com/Githubuser1122bruh/RAMsey">GitHub page for RAMsey</a> for more information.</p>'
-            '<p>This is made for a project called shipwrecked which is hosted by HackClub, a non profit organisation to help teens code!</p>'
+            "<p>This is made for a project called shipwrecked which is hosted by HackClub, a non profit organisation to help teens code!</p>"
             '<p>To get more information about hackclub, visit <a href="https://hackclub.com">hackclub.com</a>. Please star the GitHub repository!</p>'
-            '<p>You can interact with the red spawning apples, those give you achievements and let you advance!</p>'
+            "<p>You can interact with the red spawning apples, those give you achievements and let you advance!</p>"
         )
 
-        self.information.setOpenExternalLinks(True) 
-        self.information.setWordWrap(True) 
+        self.information.setOpenExternalLinks(True)
+        self.information.setWordWrap(True)
         layout.addWidget(self.information)
         self.setLayout(layout)
+
 
 class Block(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(50, 50)
-        self.color = QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        self.color = QColor(
+            random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)
+        )
         self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         screen_geometry = QApplication.primaryScreen().geometry()
@@ -688,11 +747,12 @@ class Block(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setBrush(self.color)
-        painter.setPen(Qt.GlobalColor.red)  
-        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))  
-        painter.setPen(Qt.PenStyle.NoPen)  
-        painter.setBrush(self.color)  
-        painter.drawRect(self.rect().adjusted(1, 1, -2, -2))  
+        painter.setPen(Qt.GlobalColor.red)
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(self.color)
+        painter.drawRect(self.rect().adjusted(1, 1, -2, -2))
+
 
 class BlockManager:
     def __init__(self, parent_widget):
@@ -700,7 +760,7 @@ class BlockManager:
         self.blocks = []
         self.spawn_timer = QTimer()
         self.spawn_timer.timeout.connect(self.spawn_block)
-        self.spawn_timer.start(5000) 
+        self.spawn_timer.start(5000)
 
     def spawn_block(self):
         block = Block(self.parent_widget)
@@ -714,6 +774,7 @@ class BlockManager:
             print(f"Block removed: {block}")
         except ValueError:
             print(f"Block already removed: {block}")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -732,12 +793,11 @@ if __name__ == "__main__":
     control_panel = ControlPanel(ramsey_list)
 
     block_manager = BlockManager(widget)
-    widget.blocks = block_manager.blocks  
+    widget.blocks = block_manager.blocks
 
     def center_window(window):
         window.move(
-            (screen_width - window.width()) // 2,
-            (screen_height - window.height()) // 2
+            (screen_width - window.width()) // 2, (screen_height - window.height()) // 2
         )
 
     for w in [widget, first_ramsey, control_panel]:
