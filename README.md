@@ -1,3 +1,34 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=it">Itapano</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=SamhithPola2025&project=RAMsey&lang=id">Bahasa Indonesia</a>
+      </div>
+    </div>
+  </details>
+</div>
+
 # 🤖 RAMsey
 
 > **An interactive desktop robot that lives on your screen, reacts to you, and shows stats — built with Python & PyQt!**
